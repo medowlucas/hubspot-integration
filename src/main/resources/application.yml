@@ -1,0 +1,46 @@
+server:
+  port: ${SPRING_SERVER_PORT:3001}
+
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+
+  jpa:
+    hibernate:
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO}
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  security:
+    oauth2:
+      client:
+        registration:
+          hubspot:
+            client-id: ${HUBSPOT_CLIENT_ID}
+            client-secret: ${HUBSPOT_CLIENT_SECRET}
+            authorization-grant-type: authorization_code
+            redirect-uri: ${HUBSPOT_REDIRECT_URI}
+            client-name: "HubSpot"
+            scope: ${HUBSPOT_SCOPES}
+        provider:
+          hubspot:
+            authorization-uri: ${HUBSPOT_OAUTH_URL}
+            token-uri: ${HUBSPOT_OAUTH_TOKEN_URL}
+
+hubspot:
+  api:
+    contacts-url: ${HUBSPOT_CRM_CONTACTS_URL}
+
+resilience4j: # Too many requests retry
+  retry:
+    instances:
+      hubspotCreateContact:
+        max-attempts: 5   # Max atempts before failing
+        wait-duration: 2s # Delay between attempts
