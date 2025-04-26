@@ -48,5 +48,5 @@ hubspot:
 # This configuration is used to limit the number of requests to the HubSpot API
 # to prevent exceeding the rate limits set by HubSpot.
 rate-limiter:
-  max-requests: 1
-  window-seconds: 20
+  max-requests: 110
+  window-seconds: 10
