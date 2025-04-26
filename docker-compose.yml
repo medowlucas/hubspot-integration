@@ -8,6 +8,7 @@ services:
       - .env
     depends_on:
       - db
+      - redis
     networks:
       - hubspot-network
     restart: unless-stopped
@@ -24,6 +25,17 @@ services:
     networks:
       - hubspot-network
     restart: unless-stopped
+
+  redis:
+    image: redis:7.2
+    container_name: hubspot-redis
+    ports:
+      - "${REDIS_PORT}:${REDIS_PORT}"
+    restart: unless-stopped
+    networks:
+      - hubspot-network
+    env_file:
+      - .env
 
 networks:
   hubspot-network:

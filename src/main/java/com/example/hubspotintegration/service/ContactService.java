@@ -15,6 +15,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import com.example.hubspotintegration.config.HubspotApiProperties;
+import com.example.hubspotintegration.config.RateLimiterProperties;
 import com.example.hubspotintegration.dto.ContactDto;
 import com.example.hubspotintegration.exception.ContactCreationException;
 import com.example.hubspotintegration.exception.RateLimitException;
@@ -23,7 +24,6 @@ import com.example.hubspotintegration.exception.ResourceNotFoundException;
 import com.example.hubspotintegration.model.Account;
 import com.example.hubspotintegration.repository.AccountRepository;
 
-import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -36,12 +36,17 @@ public class ContactService {
     private final AccountRepository accountRepository;
     private final OAuthService oAuthService;
     private final HubspotApiProperties hubspotApiProperties;
+    private final RateLimiterService rateLimiterService;
+    private final RateLimiterProperties rateLimiterProperties;
 
     public void createContact(String accountName, ContactDto dto) {
         log.info("Criando contato para conta: {}", accountName);
 
         Account account = accountRepository.findByAccountName(accountName)
-                .orElseThrow(() -> new ResourceNotFoundException("Conta não encontrada: " + accountName));
+                .orElseThrow(() -> {
+                    log.error("Conta não encontrada: {}", accountName);
+                    return new ResourceNotFoundException("Conta não encontrada: " + accountName);
+                });
 
         try {
             tryCreateContact(dto, account);
@@ -57,19 +62,29 @@ public class ContactService {
         }
     }
 
-    @Retry(name = "hubspotCreateContact", fallbackMethod = "handleCreateContactFallback")
     private void tryCreateContact(ContactDto dto, Account account) {
         String accessToken = account.getAccessToken();
+
+        // >>>>> Controle de Rate Limit <<<<<
+        String clientKey = "hubspot:" + account.getId();
+        boolean allowed = rateLimiterService.isAllowed(
+                clientKey,
+                rateLimiterProperties.getMaxRequests(),
+                rateLimiterProperties.getWindowSeconds()
+        );
+        if (!allowed) {
+            log.warn("Limite de requisições atingido para o cliente: {}", clientKey);
+            throw new RateLimitException("Rate limit interno atingido, aguarde antes de tentar novamente.");
+        }
 
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(buildRequestBody(dto), buildHeaders(accessToken));
 
         try {
             ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
-                    hubspotApiProperties.getContactsUrl(),
-                    HttpMethod.POST,
-                    request,
-                    new ParameterizedTypeReference<>() {
-            }
+                hubspotApiProperties.getContactsUrl(),
+                HttpMethod.POST,
+                request,
+                new ParameterizedTypeReference<>() {}
             );
 
             if (response.getStatusCode() == HttpStatus.CREATED) {
@@ -85,13 +100,17 @@ public class ContactService {
             String retryAfter = e.getResponseHeaders() != null
                     ? e.getResponseHeaders().getFirst("Retry-After")
                     : null;
+
             long waitTime = retryAfter != null ? Long.parseLong(retryAfter) : 2;
+
             log.warn("Rate limit atingido. Aguardando {} segundos antes de falhar...", waitTime);
+
             try {
                 Thread.sleep(waitTime * 1000);
             } catch (InterruptedException ie) {
                 Thread.currentThread().interrupt();
             }
+
             throw new RateLimitException("Rate limit excedido, tente novamente em breve.");
         }
     }
@@ -122,10 +141,5 @@ public class ContactService {
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(token);
         return headers;
-    }
-
-    private void handleCreateContactFallback(String accountName, ContactDto dto, Throwable ex) {
-        log.error("Fallback ativado para criação de contato: {}", ex.getMessage());
-        throw new ContactCreationException("Erro persistente ao criar contato. Fallback acionado.");
     }
 }

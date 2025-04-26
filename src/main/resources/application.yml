@@ -18,6 +18,12 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      timeout: 5s
+
   security:
     oauth2:
       client:
@@ -38,9 +44,9 @@ hubspot:
   api:
     contacts-url: ${HUBSPOT_CRM_CONTACTS_URL}
 
-resilience4j: # Too many requests retry
-  retry:
-    instances:
-      hubspotCreateContact:
-        max-attempts: 5   # Max atempts before failing
-        wait-duration: 2s # Delay between attempts
+# Rate Limiter Configuration
+# This configuration is used to limit the number of requests to the HubSpot API
+# to prevent exceeding the rate limits set by HubSpot.
+rate-limiter:
+  max-requests: 1
+  window-seconds: 20
