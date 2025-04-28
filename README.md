@@ -15,9 +15,11 @@
 - Configure os valores de **HUBSPOT_CLIENT_ID** e **HUBSPOT_CLIENT_SECRET** fornecidos pela Hubspot no .env
 - Configure **HUBSPOT_REDIRECT_URI** do .env para o seu domínio https://seu-domínio:porta **/oauth/callback**
 - Configuração na Hubspot:
-   - Acesse o painel da Hubspot e configure a mesma URI acima no seu aplicativo da plataforma ex.: (https://seu-domínio:porta **/oauth/callback**)
+   - Acesse o painel do aplicativo na aba de autenticação e configure a mesma URI acima ex.: (https://seu-domínio:porta **/oauth/callback**)
 ![Aplicativo Hubspot](/images/aplicativo-hubspot.png)
-   - Crie e configure também o webhook de **contact creation** para o seu domínio https://seu-domínio:porta **/webhooks/hubspot**
+   - Inclua também escopos necessários para o fluxo da nossa API `oauth`, `crm.objects.contacts.read`, `crm.objects.contacts.write`
+![Scopes Hubspot](/images/scopes-hubspot.png)
+   - Crie e configure o webhook de **contact creation** para o seu domínio https://seu-domínio:porta **/webhooks/hubspot**
    (para o webhook funcionar precisa ter acesso externo na sua rede de domínio, utilizei o Ngrok para emular um túnel de conexão https com acesso externo)
 ![Webhook Hubspot](/images/webhook-hubspot.png)
 ![Túnel Ngrok](/images/tunel-ngrok.png)
