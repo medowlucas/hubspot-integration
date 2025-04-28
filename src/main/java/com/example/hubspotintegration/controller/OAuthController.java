@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.hubspotintegration.service.OAuthService;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -22,6 +23,7 @@ public class OAuthController {
         return ResponseEntity.ok(url);
     }
 
+    @Hidden
     @GetMapping("/callback")
     public ResponseEntity<String> handleCallback(
             @RequestParam String code,

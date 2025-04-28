@@ -16,11 +16,13 @@ import com.example.hubspotintegration.exception.InvalidSignatureException;
 import com.example.hubspotintegration.service.WebhookService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @RestController
+@Hidden
 @RequiredArgsConstructor
 @Slf4j
 @RequestMapping("/webhooks")
